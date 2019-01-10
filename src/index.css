@@ -63,6 +63,19 @@ section {
   display: flex;
 }
 
+#dataSets {
+  flex-direction: row;
+  flex-wrap: wrap; 
+}
+
+#dataSets a {
+  padding: 10px 10px 0px 10px;
+}
+
+#description {
+  margin-top: 0px;
+}
+
 #treeMap{
   position: relative;
 }
