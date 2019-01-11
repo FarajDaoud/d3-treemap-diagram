@@ -1,6 +1,5 @@
 import './index.css';
 import * as d3 from 'd3';
-import * as d3Legend from 'd3-svg-legend';
 
 //Add event listner On page load
 document.addEventListener('DOMContentLoaded', function(){
@@ -56,43 +55,40 @@ function handleResponse(response) {
 function createTreemapDiagram(dataset){
     document.getElementById('title').innerHTML = dataset.title;
     document.getElementById('description').innerHTML = dataset.desc;
+    document.getElementById('treemap').innerHTML = '';
+    document.getElementById('legend').innerHTML = '';
     fetch(dataset.source)
     .then(handleResponse)
     .then((data) => {
-        console.log(data);
         //create treemap diagram
         let mapWidth = 1100
-        ,mapHeight = 800;
+        ,mapHeight = 700;
         
         let treemap = d3.treemap()
             .size([mapWidth,mapHeight])
             .paddingInner(1);
 
-        let svg = d3.select('#treeMap')
+        let svg = d3.select('#treemap')
             .append('svg')
             .attr('width', mapWidth)
             .attr('height', mapHeight);
 
-        let tooltip = d3.select('#treeMap')
+        let tooltip = d3.select('#treemap')
             .append('div')
             .attr('id', 'tooltip')
             .style('opacity', 0);
-
-        let root = d3.hierarchy(data)
-            .eachBefore((d) => {
-                d.data.id = d.data.name;
-            })
+        //Define hierarchy
+        let hierarchy = d3.hierarchy(data)
             .sum((d) => d.value)
-            .sort((a,b) => {
-                //console.log(`ah: ${a.height}, bh: ${b.height}, bv: ${b.value}, av: ${a.value}`);
-                return b.height - a.height || b.value - a.value
-            });
-        treemap(root);
-        
+            .sort((a,b) => {return b.height - a.height || b.value - a.value});
+
+        treemap(hierarchy);
+
         let cell = svg.selectAll('g')
-            .data(root.leaves())
+            .data(hierarchy.leaves())
             .enter().append('g')
             .attr('class', 'group')
+            .style('overflow', 'hidden')
             .attr('transform', (d) => `translate(${d.x0},${d.y0})`);
 
         let color = d3.scaleOrdinal()
@@ -111,7 +107,55 @@ function createTreemapDiagram(dataset){
             .attr('data-name', (d) => d.data.name)
             .attr('data-category', (d) => d.data.category)
             .attr('data-value', (d) => d.data.value)
-            .attr('fill', (d) => color(d.data.category));
+            .attr('fill', (d) => color(d.data.category))
+            .on('mousemove', (d) => {
+                tooltip.style('opacity', .95)
+                    .attr('data-value', d.data.value)
+                    .style("left", d3.event.pageX + 15 + "px")
+                    .style("top", d3.event.pageY + "px")
+                    .style('z-index', 2)
+                    .html(`Category: ${d.data.category}<br>
+                        Name: ${d.data.name}<br>
+                        Value: ${d.data.value}`);
+            })
+            .on('mouseout', (d) => {
+                    tooltip.style('opacity', '0')
+                    .style('z-index', -1)
+            });
+
+        //append tile title to rect element.
+        cell.append("text")
+            .attr('class', 'tile-text')
+            .selectAll("tspan")
+            .data((d) => d.data.name.split(/(\w+\W+)\W+/g))
+            .enter().append("tspan")
+            .attr("x", 2)
+            .attr("y", (d, i) => 12 + i * 10)
+            .style('font-size', '12px')
+            .text((d) => d);
+
+        let categories = data.children.map((d) => d.name);
+        let legend = d3.select('#legend')
+            .append('svg')
+            .attr('width', 850)
+            .attr('height', 250);
+        let legendElement = legend
+            .append('g')
+            .attr('transform', 'translate(0, 10)')
+            .selectAll('g')
+            .data(categories).enter().append('g')
+            .attr('transform', (d, i) => `translate(${(i%4)*250},${(Math.floor(i/4))*40})`)
+        
+        legendElement.append('rect')
+            .attr('width', 20)
+            .attr('height', 20)
+            .attr('class', 'legend-item')
+            .attr('fill', (d) => color(d));
+       
+        legendElement.append('text')
+            .attr('x', 25)
+            .attr('y', 15)
+            .text((d) => d);
     })
     .catch(error => console.error(error));
 }

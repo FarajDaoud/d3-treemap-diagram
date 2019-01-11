@@ -70,6 +70,7 @@ section {
 
 #dataSets a {
   padding: 10px 10px 0px 10px;
+  color: blue;
 }
 
 #description {
@@ -82,8 +83,13 @@ section {
 
 #tooltip {
   position: absolute;
-  width: 180px;
+  width: 220px;
   height: auto;
   padding: 5px;
   background: lightblue;
+}
+
+#legend {
+  width: 900px;
+  height: auto;
 }
